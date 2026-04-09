@@ -1,122 +1,151 @@
 module neuron (
-    input clk,
-    input in,
+    input in1, in2, in3, in4,
     output reg detect
 );
 
+// neuron states (memory)
 reg s1 = 0;
 reg s2 = 0;
 reg s3 = 0;
-reg s4 = 0;
 
-reg prev = 0;
+//
+// 🔥 EVENT-DRIVEN LOGIC (NO CLOCK)
+//
+always @(in1 or in2 or in3 or in4) begin
+    detect = 0;
 
-always @(posedge clk) begin
-    detect <= 0;
-
-    // 🔥 ONLY update when input changes (SPARSITY)
-    if (in != prev) begin
-
-        // Stage 1: first '1'
-        if (in == 1 && !s1) begin
-            s1 <= 1;
-        end
-
-        // Stage 2: second '1'
-        else if (in == 1 && s1 && !s2) begin
-            s2 <= 1;
-        end
-
-        // Stage 3: '0'
-        else if (in == 0 && s2 && !s3) begin
-            s3 <= 1;
-        end
-
-        // Stage 4: final '1'
-        else if (in == 1 && s3 && !s4) begin
-            s4 <= 1;
-            detect <= 1;
-
-            // reset after detection
-            s1 <= 0;
-            s2 <= 0;
-            s3 <= 0;
-            s4 <= 0;
-        end
-
-        // ❌ WRONG sequence → reset (leak-like behavior)
-        else begin
-            s1 <= 0;
-            s2 <= 0;
-            s3 <= 0;
-            s4 <= 0;
-        end
+    // Stage 1
+    if (in1) begin
+        s1 = 1;
     end
 
-    // update previous input
-    prev <= in;
+    // Stage 2
+    if (in2 && s1) begin
+        s2 = 1;
+    end
+
+    // Stage 3
+    if (in3 && s2) begin
+        s3 = 1;
+    end
+
+    // Final detection
+    if (in4 && s3) begin
+        detect = 1;
+
+        // reset after detection
+        s1 = 0;
+        s2 = 0;
+        s3 = 0;
+    end
+
+    // ❌ optional reset on invalid spike
+    if (in2 && !s1) begin
+        s2 = 0;
+        s3 = 0;
+    end
+
+    if (in3 && !s2) begin
+        s3 = 0;
+    end
 end
 
 endmodule
 
 `timescale 1ns/1ps
 
-module testbench;
+module testbench_snn;
 
-reg clk;
-reg in;
+
+reg in1, in2, in3, in4;
 wire detect;
 
+// Instantiate FSM
 neuron uut (
-    .clk(clk),
-    .in(in),
+    
+    .in1(in1),
+    .in2(in2),
+    .in3(in3),
+    .in4(in4),
     .detect(detect)
 );
 
-// clock
-always #5 clk = ~clk;
+//
+// 🔥 CLOCK (10ns period → 100 MHz)
+//
 
+
+//
+// 🔥 MAIN STIMULUS
+//
 initial begin
-    clk = 0;
-    in = 0;
+  
+    in1 = 0; in2 = 0; in3 = 0; in4 = 0;
 
-    // noise
-    repeat (300) begin
-    in = ~in;
-    #10;
-	 end
-
-    // pattern 1101
-    in = 1; #10;
-    in = 1; #10;
-    in = 0; #10;
-    in = 1; #10;
-
-    // idle (IMPORTANT)
-    repeat (50) begin
-        in = 0;
+    // =========================
+    // 💤 LONG IDLE (SPARSITY)
+    // =========================
+    repeat (5000) begin
+        in1 = 0; in2 = 0; in3 = 0; in4 = 0;
         #10;
     end
 
-    // more patterns
-    in = 1; #10;
-    in = 1; #10;
-    in = 0; #10;
-    in = 1; #10;
+    // =========================
+    // 🌪 RANDOM NOISE
+    // =========================
+    repeat (2000) begin
+        in1 = $random % 2;
+        in2 = $random % 2;
+        in3 = $random % 2;
+        in4 = $random % 2;
+        #10;
+    end
 
-    // more noise
-    repeat (100) begin
-        in = $random % 2;
+    // =========================
+    // 🎯 VALID SEQUENCE (RARE)
+    // =========================
+    in1 = 1; in2 = 0; in3 = 0; in4 = 0; #10;
+    in1 = 0; in2 = 1; in3 = 0; in4 = 0; #10;
+    in1 = 0; in2 = 0; in3 = 1; in4 = 0; #10;
+    in1 = 0; in2 = 0; in3 = 0; in4 = 1; #10;
+
+    // =========================
+    // 💤 MORE IDLE
+    // =========================
+    repeat (5000) begin
+        in1 = 0; in2 = 0; in3 = 0; in4 = 0;
+        #10;
+    end
+
+    // =========================
+    // 🎯 ANOTHER VALID SEQUENCE
+    // =========================
+    in1 = 1; #10;
+    in1 = 0; in2 = 1; #10;
+    in2 = 0; in3 = 1; #10;
+    in3 = 0; in4 = 1; #10;
+    in4 = 0;
+
+    // =========================
+    // 🌪 LIGHT NOISE (SPARSE)
+    // =========================
+    repeat (1000) begin
+        in1 = ($random % 10 == 0); // very rare spikes
+        in2 = ($random % 12 == 0);
+        in3 = ($random % 15 == 0);
+        in4 = ($random % 18 == 0);
         #10;
     end
 
     $finish;
 end
 
-// VCD
+//
+// 🔥 VCD DUMP (CRITICAL)
+//
 initial begin
-    $dumpfile("dump.vcd");
-    $dumpvars(0, testbench);
+    $dumpfile("snn_dump.vcd");
+    $dumpvars(0, testbench_snn);
 end
 
 endmodule
