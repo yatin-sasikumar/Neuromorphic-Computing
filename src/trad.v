@@ -82,20 +82,15 @@ trad uut (
     .detect(detect)
 );
 
-//
-// 🔥 CLOCK (10ns period → 100 MHz)
-//
+
 always #5 clk = ~clk;
 
-//
-// 🔥 MAIN STIMULUS
-//
 initial begin
     clk = 0;
     in1 = 0; in2 = 0; in3 = 0; in4 = 0;
 
     // =========================
-    // 💤 LONG IDLE (SPARSITY)
+    // LONG IDLE (SPARSITY)
     // =========================
     repeat (5000) begin
         in1 = 0; in2 = 0; in3 = 0; in4 = 0;
@@ -103,7 +98,7 @@ initial begin
     end
 
     // =========================
-    // 🌪 RANDOM NOISE
+    // RANDOM NOISE
     // =========================
     repeat (2000) begin
         in1 = $random % 2;
@@ -114,7 +109,7 @@ initial begin
     end
 
     // =========================
-    // 🎯 VALID SEQUENCE (RARE)
+    // VALID SEQUENCE (RARE)
     // =========================
     in1 = 1; in2 = 0; in3 = 0; in4 = 0; #10;
     in1 = 0; in2 = 1; in3 = 0; in4 = 0; #10;
@@ -122,7 +117,7 @@ initial begin
     in1 = 0; in2 = 0; in3 = 0; in4 = 1; #10;
 
     // =========================
-    // 💤 MORE IDLE
+    // MORE IDLE
     // =========================
     repeat (5000) begin
         in1 = 0; in2 = 0; in3 = 0; in4 = 0;
@@ -130,7 +125,7 @@ initial begin
     end
 
     // =========================
-    // 🎯 ANOTHER VALID SEQUENCE
+    // ANOTHER VALID SEQUENCE
     // =========================
     in1 = 1; #10;
     in1 = 0; in2 = 1; #10;
@@ -139,7 +134,7 @@ initial begin
     in4 = 0;
 
     // =========================
-    // 🌪 LIGHT NOISE (SPARSE)
+    // LIGHT NOISE (SPARSE)
     // =========================
     repeat (1000) begin
         in1 = ($random % 10 == 0); // very rare spikes
@@ -151,10 +146,7 @@ initial begin
 
     $finish;
 end
-
-//
-// 🔥 VCD DUMP (CRITICAL)
-//
+//VCD DUMP
 initial begin
     $dumpfile("fsm_dump.vcd");
     $dumpvars(0, testbench_fsm);
