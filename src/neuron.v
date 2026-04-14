@@ -8,9 +8,7 @@ reg s1 = 0;
 reg s2 = 0;
 reg s3 = 0;
 
-//
-// 🔥 EVENT-DRIVEN LOGIC (NO CLOCK)
-//
+
 always @(in1 or in2 or in3 or in4) begin
     detect = 0;
 
@@ -39,7 +37,7 @@ always @(in1 or in2 or in3 or in4) begin
         s3 = 0;
     end
 
-    // ❌ optional reset on invalid spike
+  
     if (in2 && !s1) begin
         s2 = 0;
         s3 = 0;
@@ -69,21 +67,12 @@ neuron uut (
     .in4(in4),
     .detect(detect)
 );
-
-//
-// 🔥 CLOCK (10ns period → 100 MHz)
-//
-
-
-//
-// 🔥 MAIN STIMULUS
-//
 initial begin
   
     in1 = 0; in2 = 0; in3 = 0; in4 = 0;
 
     // =========================
-    // 💤 LONG IDLE (SPARSITY)
+    //  LONG IDLE (SPARSITY)
     // =========================
     repeat (5000) begin
         in1 = 0; in2 = 0; in3 = 0; in4 = 0;
@@ -91,7 +80,7 @@ initial begin
     end
 
     // =========================
-    // 🌪 RANDOM NOISE
+    //  RANDOM NOISE
     // =========================
     repeat (2000) begin
         in1 = $random % 2;
@@ -102,7 +91,7 @@ initial begin
     end
 
     // =========================
-    // 🎯 VALID SEQUENCE (RARE)
+    // VALID SEQUENCE (RARE)
     // =========================
     in1 = 1; in2 = 0; in3 = 0; in4 = 0; #10;
     in1 = 0; in2 = 1; in3 = 0; in4 = 0; #10;
@@ -110,7 +99,7 @@ initial begin
     in1 = 0; in2 = 0; in3 = 0; in4 = 1; #10;
 
     // =========================
-    // 💤 MORE IDLE
+    //  MORE IDLE
     // =========================
     repeat (5000) begin
         in1 = 0; in2 = 0; in3 = 0; in4 = 0;
@@ -118,7 +107,7 @@ initial begin
     end
 
     // =========================
-    // 🎯 ANOTHER VALID SEQUENCE
+    // ANOTHER VALID SEQUENCE
     // =========================
     in1 = 1; #10;
     in1 = 0; in2 = 1; #10;
@@ -127,7 +116,7 @@ initial begin
     in4 = 0;
 
     // =========================
-    // 🌪 LIGHT NOISE (SPARSE)
+    // LIGHT NOISE (SPARSE)
     // =========================
     repeat (1000) begin
         in1 = ($random % 10 == 0); // very rare spikes
@@ -140,9 +129,7 @@ initial begin
     $finish;
 end
 
-//
-// 🔥 VCD DUMP (CRITICAL)
-//
+// VCD DUMP 
 initial begin
     $dumpfile("snn_dump.vcd");
     $dumpvars(0, testbench_snn);
